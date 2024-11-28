@@ -15,38 +15,57 @@ fn load_dice_faces(file_path: &str) -> Result<DiceFaces, Box<dyn std::error::Err
     Ok(dice_faces)
 }
 
-pub fn roll_dice(arg: &FacesArgs) -> Result<(), Box<dyn std::error::Error>> {
+pub fn roll_dice(arg: &FacesArgs) -> Result<String, Box<dyn std::error::Error>> {
     let mut rng = rand::thread_rng();
-    if let Some(faces) = arg.faces.as_ref() {
-        let roll = rng.gen_range(1..=*faces);
-        let roll_str: &str = &format!("{}", roll);
-        match arg.disable_ascii {
-            Some(true) => {
-                print_figlet(roll_str)?;
-            }
-            _ => {
-                if *faces <= 6 {
-                    print_ascii(roll_str)?;
-                } else {
-                    print_figlet(roll_str)?;
-                }
+    let faces = match arg.faces {
+        Some(faces) => faces,
+        None => 6,
+    };
+
+    let roll = rng.gen_range(1..=faces);
+    let roll_string = format!("{}", roll);
+    let roll_str: &str = &roll_string;
+
+    match arg.disable_ascii {
+        Some(true) => print_figlet(roll_str),
+        _ => {
+            if faces <= 6 {
+                print_ascii(roll_str)
+            } else {
+                print_figlet(roll_str)
             }
         }
     }
-    Ok(())
 }
 
-fn print_figlet(roll_str: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn print_figlet(roll_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     let standard_font = figlet_rs::FIGfont::standard()?;
     let figure = standard_font.convert(roll_str);
-    println!("{}", figure.unwrap());
-    Ok(())
+    // match figure {
+    //     Some(fig) => Ok(format!("{}", fig)),
+    //     None => Err(Box::new(std::io::Error::new(
+    //         std::io::ErrorKind::InvalidData,
+    //         "Failed to convert string to figlet",
+    //     ))),
+    // }
+    figure
+        .map(|fig| format!("{}", fig))
+        .ok_or_else(|| "Failed to convert string into figlet".into())
 }
 
-fn print_ascii(roll_str: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn print_ascii(roll_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     let dice_faces = load_dice_faces("faces.json")?;
-    if let Some(face) = dice_faces.faces.get(roll_str) {
-        println!("{}", face)
-    };
-    Ok(())
+    // if let Some(face) = dice_faces.faces.get(roll_str) {
+    //     Ok(format!("{}", face))
+    // } else {
+    //     Err(Box::new(std::io::Error::new(
+    //         std::io::ErrorKind::NotFound,
+    //         "Face not found",
+    //     )))
+    // }
+    dice_faces
+        .faces
+        .get(roll_str)
+        .map(|face| format!("{}", face))
+        .ok_or_else(|| "Face not found.".into())
 }

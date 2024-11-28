@@ -1,6 +1,8 @@
 .direnv
 .devenv
-
+helix.log
 # Added by cargo
 
 /target
+/dist
+
